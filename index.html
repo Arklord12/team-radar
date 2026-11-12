@@ -1,15 +1,113 @@
 <!doctype html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Evaluación de equipo</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
-</html>
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Evaluación de equipo</title>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js" defer></script>
+<style>
+*{box-sizing:border-box}body{margin:0;background:white;color:#334155;font:14px Figtree,system-ui,sans-serif}.layout{min-height:100vh}aside{padding:32px 24px 0;display:flex;flex-direction:column;gap:24px}h1{font-size:20px;margin:0;font-weight:600}p{line-height:1.5}.muted{color:#94a3b8;font-size:12px}.intro{font-size:14px;margin:4px 0 0}section{border-top:1px solid #f1f5f9;padding-top:24px}h2{display:flex;align-items:center;gap:12px;font-size:14px;margin:0 0 16px}h2 span{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;font-size:12px;color:#475569}.blue{background:#d6eaf8}.lilac{background:#e8def8}.peach{background:#fde8d7}form,.row{display:flex;gap:8px;align-items:center}input,textarea,select,button{font:inherit;color:inherit}input,textarea,select{border:1px solid #e2e8f0;border-radius:8px;background:white;padding:8px 12px;outline:none}input:focus,textarea:focus,select:focus{border-color:#7dd3fc;box-shadow:0 0 0 2px #e0f2fe}input:not([type=color]),textarea{width:100%;min-width:0}input::placeholder,textarea::placeholder{color:#cbd5e1}input[readonly]{background:#f8fafc;color:#64748b}button{border:0;border-radius:8px;padding:10px 16px;cursor:pointer;font-weight:500;flex-shrink:0}button:hover{filter:brightness(.97)}button:disabled{opacity:.5;cursor:not-allowed}.fields{display:grid;gap:8px;margin-top:16px}input[type=color]{width:36px;height:36px;padding:2px;flex-shrink:0;cursor:pointer}.help{margin:12px 0 0}.error{color:#fb7185;font-size:12px;margin:8px 0 0}.warning{padding:10px;background:#fffbeb;color:#d97706;border-radius:8px;font-size:12px}.scale{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;color:#64748b}.member{border-left:4px solid;padding-left:16px;margin-bottom:24px}.member h3{font-size:14px;margin:0 0 12px}.member h3 span{font-weight:400;font-size:12px;color:#94a3b8}.rating{margin-top:16px}.rating .row{justify-content:space-between;gap:12px}.rating input{width:64px!important;text-align:center;flex-shrink:0;appearance:textfield}.rating input::-webkit-inner-spin-button{appearance:none}.rating textarea{margin-top:8px;resize:vertical}.taken{text-align:right;margin:4px 0 0}.footer{position:sticky;bottom:0;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-top:1px solid #f1f5f9;margin:auto -24px 0;padding:16px 24px}.footer button{width:100%;background:#d5f0e3;border-radius:12px;padding:14px;font-weight:600}.footer p{text-align:center;margin-bottom:0}main{display:flex;align-items:center;justify-content:center;padding:24px}.empty{text-align:center;color:#94a3b8}.dot{width:56px;height:56px;background:#e8def8;border-radius:50%;margin:0 auto 16px}.chart{width:100%;max-width:min(100%,75vh)}[hidden]{display:none!important}@media(min-width:1024px){.layout{display:flex;height:100vh}aside{width:33.333%;overflow-y:auto;border-right:1px solid #f1f5f9}main{width:66.667%;overflow-y:auto;padding:40px}}
+</style>
+</head><body>
+<div class="layout"><aside>
+<header><h1>Evaluación de equipo</h1><p class="intro muted">Define los valores y el equipo, luego puntúa a cada persona.</p></header>
+<section><h2><span class="blue">1</span>Valores a evaluar</h2><form id="values-form"><input id="value-count" aria-label="Cantidad de valores" type="number" min="3" max="12" required placeholder="Cantidad (3–12)"><button class="blue">Generar</button></form><p id="values-error" class="error" role="alert"></p><div id="values" class="fields"></div></section>
+<section><h2><span class="lilac">2</span>Equipo</h2><form id="team-form"><input id="peer-count" aria-label="Cantidad de compañeros a evaluar" type="number" min="1" max="9" required placeholder="Compañeros (1–9)"><button class="blue">Generar</button></form><p id="team-error" class="error" role="alert"></p><div id="team" class="fields"></div><p class="help muted">«Tú» es tu autoevaluación y siempre está incluido.</p></section>
+<section id="evaluation" hidden><h2><span class="peach">3</span>Evaluación</h2><div class="scale"><label for="scale">Escala de notas, de 1 a</label><select id="scale"></select></div><div id="matrix"></div></section>
+<div class="footer"><button id="export" disabled>Imprimir resultados</button><p id="export-help" class="muted">Genera al menos 3 valores para exportar el informe.</p><p id="export-error" class="error" role="alert"></p></div>
+</aside><main><div id="empty" class="empty"><div class="dot"></div><p>Genera al menos 3 valores para ver el gráfico de radar.</p></div><div id="chart-box" class="chart" hidden><canvas id="radar" role="img" aria-label="Gráfico de radar de la evaluación del equipo"></canvas></div></main></div>
+<script>
+'use strict';
+const colors=['#f4a6c0','#9ccbee','#a8e0bd','#fbc99a','#c9b6ee','#f3dc8a','#8fdcd4','#e7b5a0','#b3c3f3','#c5d99a'];
+const examples=['Compromiso','Responsabilidad','Respeto','Comunicación','Colaboración','Iniciativa'];
+let values=[],members=[{id:'me',name:'Tú',color:colors[0]}],maxScore=5,ratings={},chart=null,sequence=0;
+const $=id=>document.getElementById(id),uid=()=>`item-${++sequence}`;
+const esc=text=>String(text).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const memberLabel=(m,i)=>m.name.trim()||`Persona ${i}`,valueLabel=(v,i)=>v.name.trim()||`Valor ${i+1}`;
+const getRating=(m,v)=>ratings[m]?.[v]??{score:'',note:''};
+function patch(m,v,data){ratings[m]??={};ratings[m][v]={...getRating(m,v),...data}}
+function takenFor(m,v){return m==='me'?[]:members.filter(p=>p.id!=='me'&&p.id!==m).map(p=>({score:Number(getRating(p.id,v).score),owner:memberLabel(p,members.indexOf(p))})).filter(t=>t.score>0)}
+function renderValues(){$('values').innerHTML=values.map((v,i)=>`<input data-value="${v.id}" value="${esc(v.name)}" aria-label="Nombre del valor ${i+1}" placeholder="Valor ${i+1} (ej. ${examples[i%6]})">`).join('')}
+function renderTeam(){$('team').innerHTML=members.map((m,i)=>`<div class="row"><input type="color" data-color="${m.id}" value="${m.color}" aria-label="Color de ${esc(memberLabel(m,i))}"><input data-member="${m.id}" value="${esc(m.name)}" ${m.id==='me'?'readonly aria-label="Tú (autoevaluación)"':`aria-label="Nombre de la persona ${i}" placeholder="Persona ${i}"`}></div>`).join('')}
+function renderMatrix(){const ready=values.length>=3;$('evaluation').hidden=!ready;$('export').disabled=!ready;$('export-help').hidden=ready;if(!ready)return;
+$('matrix').innerHTML=(maxScore<members.length-1?`<p class="warning">Con ${members.length-1} compañeros, sube la escala a ${members.length-1} o más para que cada uno pueda tener una nota distinta en cada valor.</p>`:'')+members.map((m,mi)=>`<div class="member" style="border-color:${m.color}"><h3>${esc(memberLabel(m,mi))} ${m.id==='me'?'<span>Autoevaluación: puedes repetir notas.</span>':''}</h3>${values.map((v,vi)=>{const r=getRating(m.id,v.id),key=m.id+':'+v.id;return `<div class="rating"><div class="row"><label for="${key}">${esc(valueLabel(v,vi))}</label><input id="${key}" data-score="${m.id}" data-v="${v.id}" type="number" inputmode="numeric" min="1" max="${maxScore}" step="1" value="${r.score}"></div><p class="taken muted" data-taken="${key}"></p><p class="error taken" id="error-${key}" role="alert"></p><textarea rows="2" data-note="${m.id}" data-v="${v.id}" placeholder="Justifica esta nota" aria-label="Justificación de ${esc(valueLabel(v,vi))} para ${esc(memberLabel(m,mi))}">${esc(r.note)}</textarea></div>`}).join('')}</div>`).join('');refreshTaken()}
+function refreshTaken(){document.querySelectorAll('[data-taken]').forEach(el=>{const [m,v]=el.dataset.taken.split(':');const t=takenFor(m,v).map(x=>x.score).sort((a,b)=>a-b);el.textContent=t.length?'Ocupadas por compañeros: '+t.join(', '):''})}
+function updateChart(){const ready=values.length>=3;$('empty').hidden=ready;$('chart-box').hidden=!ready;if(!ready){chart?.destroy();chart=null;return}if(!window.Chart){$('empty').hidden=false;$('empty').textContent='No se pudo cargar el gráfico. Comprueba tu conexión a Internet.';return}
+const data={labels:values.map(valueLabel),datasets:members.map((m,i)=>({id:m.id,label:memberLabel(m,i),data:values.map(v=>Number(getRating(m.id,v.id).score)||0),backgroundColor:m.color+'66',borderColor:m.color,borderWidth:2,pointBackgroundColor:m.color,pointBorderColor:'#ffffff',pointRadius:4,pointHoverRadius:7,pointHitRadius:10,fill:true}))};
+if(chart){chart.data=data;chart.options.scales.r.max=maxScore;chart.update();return}chart=new Chart($('radar'),{type:'radar',data,options:{responsive:true,animation:{duration:250},scales:{r:{min:0,max:maxScore,ticks:{stepSize:1,showLabelBackdrop:false,color:'#94a3b8'},grid:{color:'#e2e8f0'},angleLines:{color:'#e2e8f0'},pointLabels:{color:'#475569',font:{size:13,weight:'500'}}}},plugins:{legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:8,padding:18,color:'#475569'}},tooltip:{backgroundColor:'#334155'}}}})}
+$('values-form').addEventListener('submit',e=>{e.preventDefault();const n=Number($('value-count').value);if(!Number.isInteger(n)||n<3||n>12)return;values=Array.from({length:n},(_,i)=>values[i]??{id:uid(),name:''});renderValues();renderMatrix();updateChart()});
+$('team-form').addEventListener('submit',e=>{e.preventDefault();const n=Number($('peer-count').value);if(!Number.isInteger(n)||n<1||n>9)return;members=[members[0],...Array.from({length:n},(_,i)=>members[i+1]??{id:uid(),name:'',color:colors[(i+1)%colors.length]})];renderTeam();renderMatrix();updateChart()});
+$('values').addEventListener('input',e=>{const v=values.find(v=>v.id===e.target.dataset.value);if(v){v.name=e.target.value;renderMatrix();updateChart()}});
+$('team').addEventListener('input',e=>{const id=e.target.dataset.member||e.target.dataset.color,m=members.find(m=>m.id===id);if(m){if(e.target.dataset.color)m.color=e.target.value;else m.name=e.target.value;renderMatrix();updateChart()}});
+$('matrix').addEventListener('input',e=>{const el=e.target,m=el.dataset.score,v=el.dataset.v;if(el.dataset.note){patch(el.dataset.note,v,{note:el.value});return}if(!m)return;const raw=el.value,n=Number(raw),error=$('error-'+m+':'+v);let message='';if(raw!==''&&(!Number.isInteger(n)||n<1||n>maxScore))message=`Escribe un número entero del 1 al ${maxScore}.`;const clash=raw!==''&&takenFor(m,v).find(t=>t.score===n);if(!message&&clash)message=`El ${n} ya lo tiene ${clash.owner} en este valor. Elige otra nota.`;error.textContent=message;if(message){el.value=getRating(m,v).score;return}patch(m,v,{score:raw===''?'':n});refreshTaken();updateChart()});
+$('scale').innerHTML=Array.from({length:8},(_,i)=>`<option value="${i+2}" ${i+2===5?'selected':''}>${i+2}</option>`).join('');
+$('scale').addEventListener('change',e=>{maxScore=Number(e.target.value);Object.values(ratings).forEach(byValue=>Object.values(byValue).forEach(r=>{if(r.score>maxScore)r.score=''}));renderMatrix();updateChart()});
+document.addEventListener('DOMContentLoaded',()=>{renderTeam();updateChart()});
+const avoidBreak = 'break-inside:avoid;page-break-inside:avoid;';
+
+// Informe con estilos en línea: no depende de Tailwind ni de que el panel esté visible
+function buildReport({ image, values, members, getRating, maxScore }) {
+  const date = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const sections = members
+    .map((m, mi) => {
+      const heading = `
+        <h2 style="margin:0 0 6px;font-size:16px;color:#1e293b;">
+          <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${m.color};margin-right:8px;"></span>${esc(memberLabel(m, mi))}${m.id === 'me' ? ' <span style="font-size:12px;font-weight:400;color:#94a3b8;">(Autoevaluación)</span>' : ''}
+        </h2>`;
+
+      const rows = values
+        .map((v, vi) => {
+          const { score, note } = getRating(m.id, v.id);
+          return `
+            <div style="${avoidBreak}padding:8px 0;border-bottom:1px solid #eef2f7;">
+              ${vi === 0 ? heading : ''}
+              <table style="width:100%;border-collapse:collapse;"><tr>
+                <td style="font-size:13px;font-weight:600;color:#334155;">${esc(valueLabel(v, vi))}</td>
+                <td style="text-align:right;font-size:13px;font-weight:700;color:#334155;">Nota: ${score === '' ? '—' : `${score} / ${maxScore}`}</td>
+              </tr></table>
+              <p style="margin:4px 0 0;font-size:12px;line-height:1.5;color:#64748b;white-space:pre-wrap;">${note.trim() ? esc(note.trim()) : 'Sin justificación.'}</p>
+            </div>`;
+        })
+        .join('');
+
+      return `<section style="margin-bottom:20px;">${rows}</section>`;
+    })
+    .join('');
+
+  return `
+    <div style="font-family:Helvetica,Arial,sans-serif;color:#334155;">
+      <div style="page-break-after:always;">
+        <h1 style="margin:0;font-size:24px;color:#1e293b;">Evaluación de equipo</h1>
+        <p style="margin:4px 0 16px;font-size:12px;color:#94a3b8;">${date}</p>
+        <img src="${image}" alt="Gráfico de radar" style="display:block;width:100%;max-width:560px;margin:0 auto;" />
+      </div>
+      ${sections}
+    </div>`;
+}
+
+async function exportPdf(data) {
+  await html2pdf()
+    .set({
+      margin: 14,
+      filename: 'evaluacion-de-equipo.pdf',
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['css', 'legacy'] },
+    })
+    .from(buildReport(data), 'string')
+    .save();
+}
+
+$('export').addEventListener('click',async()=>{
+ const button=$('export');button.disabled=true;button.textContent='Generando PDF…';$('export-error').textContent='';
+ try{if(!chart)throw new Error('El gráfico todavía no está disponible.');if(!window.html2pdf)throw new Error('No se pudo cargar el exportador. Comprueba tu conexión a Internet.');chart.stop();chart.update('none');await exportPdf({image:chart.toBase64Image('image/png',1),values,members,getRating,maxScore})}
+ catch(error){$('export-error').textContent=error.message||'No se pudo generar el PDF.'}
+ finally{button.disabled=values.length<3;button.textContent='Imprimir resultados'}
+});
+</script>
+</body></html>
+
+
